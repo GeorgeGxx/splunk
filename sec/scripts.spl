@@ -1,1 +1,3 @@
-Nothing to see here..
+index="main"
+
+index=perfmon collection=Memory counter="% Committed Bytes In Use" | eval numb=ceil(Value) | eval Status=case(Value<80, "Memory Usage Ok", Value>80 and Value<90, "Memory Usage Major Status", Value>90, "Memory Usage Critical Status") | transaction Status maxspan=10 | eval numb = numb." %" | table host Status numb | dedup host | sort -numb
