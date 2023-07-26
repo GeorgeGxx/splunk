@@ -1,0 +1,48 @@
+index="main"
+
+index=perfmon collection=Memory counter="% Committed Bytes In Use" | eval numb=ceil(Value) | eval Status=case(Value<80, "Memory Usage Ok", Value>80 and Value<90, "Memory Usage Major Status", Value>90, "Memory Usage Critical Status") | transaction Status maxspan=10 | eval numb = numb." %" | table host Status numb | dedup host | sort -numb
+
+---
+
+index=main source="WinEventLog:*" EventCode=4688 Creator_Process_Name="*wmiprvse.exe" AND NOT Logon_ID=0x3E7 |  table _time, host, user, New_Process_Name, Process_Command_Line | rename host AS Host, user AS Usuario, New_Process_Name AS "Proceso nuevo", Process_Command_Line AS "Comando"
+
+---
+
+index=main source="WinEventLog:*" (EventCode=4688 Creator_Process_Name="*wmiprvse.exe" AND NOT Logon_ID=0x3E7)
+| table _time, host, user, New_Process_Name, Process_Command_Line
+| rename host AS Host, user AS Usuario, New_Process_Name AS "Proceso nuevo", Process_Command_Line AS "Comando"
+| join type=inner src_ip [ search index=main source="WinEventLog:*" EventCode=4624 | table EventCode, src_ip ]
+
+---
+
+index=main source="WinEventLog:*" (EventCode=4688 Creator_Process_Name="*wmiprvse.exe" AND NOT Logon_ID=0x3E7)
+| table _time, host, user, New_Process_Name, Process_Command_Line
+| rename host AS Host, user AS Usuario, New_Process_Name AS "Proceso nuevo", Process_Command_Line AS "Comando"
+| join type=inner src_ip [ search index=main source="WinEventLog:*" EventCode=4624 | table EventCode, Source_Network_Address ]
+
+---
+
+index=main source="WinEventLog:*" (EventCode=4688 Creator_Process_Name="*wmiprvse.exe" AND NOT Logon_ID=0x3E7)
+| table _time, host, user, New_Process_Name, Process_Command_Line
+| rename host AS Host, user AS Usuario, New_Process_Name AS "Proceso nuevo", Process_Command_Line AS "Comando"
+| join type=inner src_ip [ search index=main source="WinEventLog:*" EventCode=4624 | table EventCode, src_ip ]
+|table *
+
+---
+
+index=main source="WinEventLog:*" (EventCode=4688 Creator_Process_Name="*wmiprvse.exe" AND NOT Logon_ID=0x3E7)
+| table _time, host, user, New_Process_Name, Process_Command_Line, src_ip
+| rename host AS Host, user AS Usuario, New_Process_Name AS "Proceso nuevo", Process_Command_Line AS "Comando"
+| join type=inner src_ip [ search index=main source="WinEventLog:*" EventCode=4624 | table EventCode, src_ip ]
+
+---
+
+| search ( dest_ip!=10.0.0.0/8 AND dest_ip!=172.16.0.0/12 AND dest_ip!=192.168.0.0/16)
+
+---
+
+|eval es_publica_o_no=if(dest_ip!=10.0.0.0/8 OR dest_ip!=172.16.0.0/12 OR dest_ip!=192.168.0.0/16,"IP públia","IP Privada")
+
+---
+
+| eval es_publica_o_no = if(dest_ip != "10.0.0.0/8" AND dest_ip != "172.16.0.0/12" AND dest_ip != "192.168.0.0/16", "IP pública", "IP privada")
